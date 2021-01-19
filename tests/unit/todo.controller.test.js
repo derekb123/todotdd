@@ -25,7 +25,7 @@ describe('TodoController.getTodos', () => {
   it('Should call todoModel.find({})', async () => {
     await TodoController.getTodos(req, res, next);
     expect(TodoModel.find).toHaveBeenCalledWith({});
-  })
+  });
 });
 
   it('Should return response with status 200 and all todos', async () => {
@@ -34,6 +34,14 @@ describe('TodoController.getTodos', () => {
     expect(res.statusCode).toBe(200);
     expect(res._isEndCalled()).toBeTruthy();
     expect(res._getJSONData()).toStrictEqual(allTodos);
+  });
+
+  it('should handle errors in getTodos', async () => {
+    const errorMessage = { message: 'There is an error'};
+    const rejectedPromise = Promise.reject(errorMessage);
+    TodoModel.find.mockReturnValue(rejectedPromise);
+    await TodoController.getTodos(req, res, next);
+    expect(next).toBeCalledWith(errorMessage);
   })
 
 describe('TodoController.createTodo', ()=> {

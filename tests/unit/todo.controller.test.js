@@ -7,6 +7,7 @@ const allTodos = require('../mock-data/all-todos.json');
 
 TodoModel.create = jest.fn();
 TodoModel.find = jest.fn();
+TodoModel.findById = jest.fn();
 
 let req, res, next;
 
@@ -15,6 +16,43 @@ beforeEach(() => {
   res = httpMocks.createResponse();
   next = jest.fn();
 });
+
+describe('TodoController.getTodoById', () => {
+
+  it('should have a getTodoById function', () => {
+    expect(typeof TodoController.getTodoById).toBe('function');
+  });
+
+  it('should call TodoModel.findById with route parameters', async () => {
+    req.params.todoId = '600712ce3bc1715c2af5abda';
+    await TodoController.getTodoById(req, res, next);
+    expect(TodoModel.findById).toBeCalledWith('600712ce3bc1715c2af5abda');
+  })
+
+  it('should call json body and response code 200', async () => {
+    TodoModel.findById.mockReturnValue(newTodo);
+    await TodoController.getTodoById(req, res, next);
+    expect(res.statusCode).toBe(200);
+    expect(res._isEndCalled()).toBeTruthy();
+    expect(res._getJSONData()).toStrictEqual(newTodo);
+  });
+
+  it('should handle errors for todoById', async () => {
+    const errorMessage = { message: 'error during getTodoById'};
+    const rejectedPromise = Promise.reject(errorMessage);
+    TodoModel.findById.mockReturnValue(rejectedPromise);
+    await TodoController.getTodoById(req, res, next);
+    expect(next).toBeCalledWith(errorMessage);
+  });
+
+  it('should return 404 when item doesnt exist', async () => {
+    TodoModel.findById.mockReturnValue(null);
+    await TodoController.getTodoById(req, res, next);
+    expect(res.statusCode).toBe(404);
+    expect(res._isEndCalled()).toBeTruthy();
+  })
+
+})
 
 describe('TodoController.getTodos', () => {
 
@@ -25,8 +63,8 @@ describe('TodoController.getTodos', () => {
   it('Should call todoModel.find({})', async () => {
     await TodoController.getTodos(req, res, next);
     expect(TodoModel.find).toHaveBeenCalledWith({});
+    });
   });
-});
 
   it('Should return response with status 200 and all todos', async () => {
     TodoModel.find.mockReturnValue(allTodos);
@@ -37,7 +75,7 @@ describe('TodoController.getTodos', () => {
   });
 
   it('should handle errors in getTodos', async () => {
-    const errorMessage = { message: 'There is an error'};
+    const errorMessage = { message: 'Error during getTodos'};
     const rejectedPromise = Promise.reject(errorMessage);
     TodoModel.find.mockReturnValue(rejectedPromise);
     await TodoController.getTodos(req, res, next);
